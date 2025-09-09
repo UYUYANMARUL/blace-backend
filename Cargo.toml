@@ -1,0 +1,20 @@
+[package]
+name = "blace-backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix = "0.13"
+actix-web = "4.11.0"
+actix-web-actors = "4.2"
+awc = "3.0"
+env_logger = "0.10"
+rand = "0.8"
+rusty-leveldb = {version="4.0.0" , features = ["asyncdb-tokio"]}
+secp256k1 = "0.31.1"
+serde = "1.0.219"
+serde_json="1.0.142"
+tokio = { version ="1.47.1", features=["full"]}
+uuid = { version = "1.10", features = ["v4", "serde"] }
+utoipa = { version = "4.0", features = ["actix_extras", "uuid"] }
+utoipa-swagger-ui = { version = "4.0", features = ["actix-web"] }
