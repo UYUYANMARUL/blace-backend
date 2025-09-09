@@ -18,9 +18,9 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc-debian12
-COPY --from=builder /app/target/release/portfolio-service /app/portfolio-service
+COPY --from=builder /app/target/release/blace-backend /app/blace-backend
 WORKDIR /app
 
 EXPOSE 8000
 
-CMD ["./portfolio-service"]
+CMD ["./blace-backend"]
