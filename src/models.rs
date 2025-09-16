@@ -72,7 +72,6 @@ pub struct GridData {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct PixelUpdateMessage {
-    pub game_id: Uuid,
     pub x: usize,
     pub y: usize,
     pub pixel: RGBPixel,

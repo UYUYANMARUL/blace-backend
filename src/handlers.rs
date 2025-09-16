@@ -1,3 +1,4 @@
+use actix::Addr;
 use actix_web::{web, HttpResponse, Result};
 use std::time::{SystemTime, UNIX_EPOCH};
 use utoipa;
@@ -5,8 +6,9 @@ use uuid::Uuid;
 
 use crate::database::Database;
 use crate::models::{
-    CreateGameRequest, Game, GameInfo, GridData, PutPixelRequest,
+    CreateGameRequest, Game, GameInfo, GridData, PutPixelRequest, PixelUpdateMessage,
 };
+use crate::websocket::{PixelUpdate, WebSocketServer};
 
 #[utoipa::path(
     post,
@@ -65,6 +67,7 @@ pub async fn create_game(
 )]
 pub async fn put_pixel(
     db: web::Data<Database>,
+    ws_server: web::Data<Addr<WebSocketServer>>,
     path: web::Path<Uuid>,
     req: web::Json<PutPixelRequest>,
 ) -> Result<HttpResponse> {
@@ -76,7 +79,19 @@ pub async fn put_pixel(
         }
 
         match db.put_pixel(&game_id, req.x, req.y, &req.pixel).await {
-            Ok(_) => Ok(HttpResponse::Ok().json("Pixel updated successfully")),
+            Ok(_) => {
+                let pixel_update = PixelUpdate {
+                    game_id,
+                    message: PixelUpdateMessage {
+                        x: req.x,
+                        y: req.y,
+                        pixel: req.pixel.clone(),
+                    },
+                };
+                
+                ws_server.do_send(pixel_update);
+                Ok(HttpResponse::Ok().json("Pixel updated successfully"))
+            }
             Err(_) => Ok(HttpResponse::InternalServerError().json("Failed to update pixel")),
         }
     } else {
