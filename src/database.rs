@@ -29,7 +29,8 @@ impl Database {
             let game_list_value = serde_json::to_vec(&game_ids).unwrap();
             self.db.put(b"game_list".to_vec(), game_list_value).await?;
         }
-        self.db.flush().await;
+        let res = self.db.flush().await;
+        println!("{:?}", res);
         Ok(())
     }
 
@@ -50,7 +51,6 @@ impl Database {
             None => Ok(None),
         }
     }
-
 
     pub async fn get_all_games(&self) -> LevelDBResult<Vec<Game>> {
         let game_ids = self.get_game_ids().await?;
@@ -78,7 +78,14 @@ impl Database {
 
         if position < game.width * game.height {
             if grid.len() != game.width * game.height {
-                grid = vec![RGBPixel { r: 255, g: 255, b: 255 }; game.width * game.height];
+                grid = vec![
+                    RGBPixel {
+                        r: 255,
+                        g: 255,
+                        b: 255
+                    };
+                    game.width * game.height
+                ];
             }
             grid[position] = pixel.clone();
             self.save_grid(game_id, &grid).await?;
@@ -91,19 +98,34 @@ impl Database {
         let key = format!("grid:{}", game_id);
         let game = self.get_game(game_id).await?.unwrap();
         let grid_size = game.width * game.height;
-        
+
         match self.db.get(key.into_bytes()).await? {
             Some(data) => Ok(serde_json::from_slice(&data).unwrap_or_else(|_| {
-                vec![RGBPixel { r: 255, g: 255, b: 255 }; grid_size]
+                vec![
+                    RGBPixel {
+                        r: 255,
+                        g: 255,
+                        b: 255
+                    };
+                    grid_size
+                ]
             })),
-            None => Ok(vec![RGBPixel { r: 255, g: 255, b: 255 }; grid_size]),
+            None => Ok(vec![
+                RGBPixel {
+                    r: 255,
+                    g: 255,
+                    b: 255
+                };
+                grid_size
+            ]),
         }
     }
     async fn save_grid(&self, game_id: &Uuid, grid: &[RGBPixel]) -> LevelDBResult<()> {
         let key = format!("grid:{}", game_id);
         let value = serde_json::to_vec(grid).unwrap();
         let res = self.db.put(key.into_bytes(), value).await;
-        self.db.flush().await;
+        let res = self.db.flush().await;
+        println!("{:?}", res);
         res
     }
 }
