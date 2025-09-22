@@ -4,6 +4,7 @@ mod models;
 mod websocket;
 
 use actix::Actor;
+use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use database::Database;
 use models::{CreateGameRequest, Game, GameInfo, GridData, PutPixelRequest, RGBPixel};
@@ -55,6 +56,12 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(ws_server.clone()))
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allow_any_method()
+                    .allow_any_header()
+            )
             .wrap(Logger::default())
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
