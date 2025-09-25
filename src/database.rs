@@ -78,11 +78,40 @@ impl Database {
         y: usize,
         pixel: &RGBPixel,
     ) -> LevelDBResult<()> {
-        let mut grid = self.get_grid(game_id).await?;
-        let game = self.get_game(game_id).await?.unwrap();
+        let db = self.db.write().await;
+
+        // Get game info
+        let game_key = format!("game:{}", game_id);
+        let game_data = db.get(game_key.into_bytes()).await?.unwrap();
+        let game: Game = serde_json::from_slice(&game_data).unwrap();
+
         let position = (y * game.width + x) as usize;
 
         if position < game.width * game.height {
+            // Get grid
+            let grid_key = format!("grid:{}", game_id);
+            let mut grid = match db.get(grid_key.clone().into_bytes()).await? {
+                Some(data) => serde_json::from_slice(&data).unwrap_or_else(|_| {
+                    vec![
+                        RGBPixel {
+                            r: 255,
+                            g: 255,
+                            b: 255
+                        };
+                        game.width * game.height
+                    ]
+                }),
+                None => vec![
+                    RGBPixel {
+                        r: 255,
+                        g: 255,
+                        b: 255
+                    };
+                    game.width * game.height
+                ],
+            };
+
+            // Ensure grid is proper size
             if grid.len() != game.width * game.height {
                 grid = vec![
                     RGBPixel {
@@ -93,8 +122,14 @@ impl Database {
                     game.width * game.height
                 ];
             }
+
+            // Update pixel
             grid[position] = pixel.clone();
-            self.save_grid(game_id, &grid).await?;
+
+            // Save grid
+            let value = serde_json::to_vec(&grid).unwrap();
+            db.put(grid_key.into_bytes(), value).await?;
+            db.flush().await;
         }
 
         Ok(())
